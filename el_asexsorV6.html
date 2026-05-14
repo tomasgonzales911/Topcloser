@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EL ASEXSOR — Plataforma del Álbum</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<style>
+:root{
+  --bg:#0a0807;--bg2:#12100e;--bg3:#1a1714;--bg4:#221f1a;
+  --text:#e8e0d4;--text2:#a09888;--text3:#605848;
+  --amber:#d4843a;--red:#c4453a;--pink:#c4537a;--purple:#7a6abf;--gold:#b8871a;
+  --border:#2a2420;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh}
+::selection{background:var(--amber);color:var(--bg)}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+/* NAV */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,8,7,.94);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.nav-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:300;letter-spacing:2px;color:var(--amber)}
+.nav-sub{font-size:10px;color:var(--text3);letter-spacing:1px}
+.tabs{display:flex;gap:4px;margin-left:auto;align-items:center;flex-wrap:wrap}
+.tab{padding:5px 12px;border-radius:16px;font-size:11px;font-weight:500;cursor:pointer;color:var(--text2);transition:all .15s;background:0;border:none;font-family:inherit}
+.tab:hover{color:var(--text);background:var(--bg3)}
+.tab.active{background:var(--amber);color:var(--bg)}
+.edit-toggle{padding:5px 12px;border-radius:16px;font-size:11px;font-weight:500;cursor:pointer;background:0;border:1px solid var(--border);color:var(--text2);font-family:inherit;transition:all .15s}
+.edit-toggle.active{background:var(--red);color:var(--text);border-color:var(--red)}
+
+/* PAGES */
+.page{display:none;padding:64px 20px 120px;max-width:1100px;margin:0 auto}
+.page.active{display:block}
+
+/* MANDALA */
+.mandala-wrap{display:flex;justify-content:center;padding:10px 0}
+.mandala-svg{max-width:100%;height:auto}
+.mandala-note{text-align:center;font-size:11px;color:var(--text3);margin-top:8px;font-style:italic}
+
+/* ITEMS — LIST */
+.list{display:flex;flex-direction:column;gap:4px}
+
+/* ITEM TYPES */
+.row{position:relative;border-radius:8px;transition:opacity .2s}
+.row.sortable-ghost{opacity:0.3}
+.row.sortable-chosen{cursor:grabbing}
+
+/* Track row */
+.tk{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:background .15s}
+.tk:hover{background:var(--bg2);border-color:var(--border)}
+.tk.open{background:var(--bg3);border-color:var(--amber);border-bottom-left-radius:0;border-bottom-right-radius:0}
+
+/* Block row */
+.bk{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:6px;cursor:pointer;background:var(--bg2);border-left:3px solid var(--gold);transition:background .15s}
+.bk:hover{background:var(--bg3)}
+.bk.open{background:var(--bg3);border-bottom-left-radius:0;border-bottom-right-radius:0}
+
+/* Header (act) row */
+.hd{padding:14px 14px 8px;display:flex;align-items:center;gap:8px;margin-top:12px}
+.hd-text{font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:400;letter-spacing:2px;text-transform:uppercase;flex:1}
+
+/* Divider row */
+.dv{text-align:center;padding:12px 14px;font-family:'Cormorant Garamond',serif;font-size:12px;letter-spacing:3px;color:var(--text3);border-top:1px dashed var(--border);border-bottom:1px dashed var(--border);margin:8px 0;display:flex;align-items:center;justify-content:center;gap:10px}
+.dv-text{flex:1;text-align:center}
+
+/* Common controls */
+.handle{width:22px;cursor:grab;color:var(--text3);font-size:13px;user-select:none;padding:4px;border-radius:4px;transition:all .15s;flex-shrink:0;display:none;align-items:center;justify-content:center;line-height:1}
+.handle:hover{background:var(--bg3);color:var(--amber)}
+.handle:active{cursor:grabbing;color:var(--amber)}
+body.edit-mode .handle{display:inline-flex}
+
+.play-btn{width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:0;color:var(--text2);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;cursor:pointer;transition:all .15s}
+.play-btn:hover{border-color:var(--amber);color:var(--amber)}
+.play-btn.playing{border-color:var(--amber);color:var(--bg);background:var(--amber)}
+
+.tk-num{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;min-width:28px;text-align:right;flex-shrink:0}
+.tk-num.int{font-size:13px;letter-spacing:1px}
+
+.info{flex:1;min-width:0}
+.title{font-size:14px;font-weight:500;margin-bottom:1px;line-height:1.3}
+.subtitle{font-size:11px;color:var(--text2);line-height:1.3}
+.bk .title{color:var(--gold);font-style:italic;font-size:12.5px}
+
+.badge{font-size:9px;padding:2px 7px;border-radius:8px;font-weight:500;flex-shrink:0}
+.badge.written{background:#1a2e1a;color:#5a5}
+.badge.demo{background:#2e2a1a;color:#aa5}
+.badge.process{background:#2e1a1a;color:#a55}
+
+.audio-btn{padding:3px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;font-size:9px;color:var(--text2);cursor:pointer;display:none;font-family:inherit}
+body.edit-mode .audio-btn{display:inline-block}
+.audio-btn:hover{border-color:var(--amber);color:var(--amber)}
+.audio-btn.has-audio{color:var(--amber);border-color:var(--amber)}
+
+.del-btn{width:22px;height:22px;border-radius:50%;border:1px solid var(--border);background:0;color:var(--text3);cursor:pointer;display:none;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;font-family:inherit;line-height:1}
+body.edit-mode .del-btn{display:inline-flex}
+.del-btn:hover{border-color:var(--red);color:var(--red)}
+
+.toggle-arrow{font-size:12px;color:var(--text3);transition:transform .2s;flex-shrink:0;width:14px;text-align:center}
+.tk.open .toggle-arrow,.bk.open .toggle-arrow{transform:rotate(90deg);color:var(--amber)}
+
+/* EXPAND */
+.expand{display:none;padding:18px;background:var(--bg2);border:1px solid var(--amber);border-top:none;border-radius:0 0 8px 8px;margin-bottom:4px}
+.expand.open{display:block}
+.bk + .expand{border-left:3px solid var(--gold);border-right:1px solid var(--border);border-top:none;border-bottom:1px solid var(--border)}
+
+.exp-section{margin-bottom:16px}
+.exp-section:last-child{margin-bottom:0}
+.exp-label{font-size:10px;color:var(--amber);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;font-weight:600;display:flex;align-items:center;gap:8px}
+.exp-content{font-size:12.5px;color:var(--text2);line-height:1.7;white-space:pre-wrap;min-height:24px}
+.exp-content.lyrics{font-size:13px;line-height:1.85}
+
+/* EDITABLE */
+[contenteditable=true]{border-radius:3px;padding:1px 3px;transition:background .15s;outline:none}
+[contenteditable=true]:hover{background:rgba(212,132,58,0.06)}
+[contenteditable=true]:focus{background:rgba(212,132,58,0.1);box-shadow:inset 0 0 0 1px var(--amber)}
+
+/* IMAGES */
+.images-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:8px}
+.img-item{position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;background:var(--bg3);border:1px solid var(--border)}
+.img-item img{width:100%;height:100%;object-fit:cover;display:block;cursor:pointer}
+.img-item .img-del{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,0.7);color:var(--text);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;font-size:11px;line-height:1}
+body.edit-mode .img-item .img-del{display:flex}
+.img-add{aspect-ratio:1;border:1px dashed var(--border);border-radius:6px;display:none;align-items:center;justify-content:center;color:var(--text3);cursor:pointer;font-size:22px;transition:all .15s}
+body.edit-mode .img-add{display:flex}
+.img-add:hover{border-color:var(--amber);color:var(--amber)}
+
+/* IMAGE LIGHTBOX */
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:200;display:none;align-items:center;justify-content:center;padding:40px;cursor:pointer}
+.lightbox.open{display:flex}
+.lightbox img{max-width:100%;max-height:100%;border-radius:8px}
+
+/* ADD BUTTONS */
+.add-row{display:flex;gap:6px;justify-content:center;margin:24px 0 0;flex-wrap:wrap}
+.add-btn{padding:6px 14px;background:var(--bg3);border:1px dashed var(--border);border-radius:6px;color:var(--text3);font-size:11px;cursor:pointer;font-family:inherit;display:none;transition:all .15s}
+body.edit-mode .add-btn{display:inline-block}
+.add-btn:hover{border-color:var(--amber);color:var(--amber);background:var(--bg2)}
+
+/* PLAYER */
+.player{position:fixed;bottom:0;left:0;right:0;z-index:99;background:rgba(18,16,14,.96);backdrop-filter:blur(16px);border-top:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:12px;transform:translateY(100%);transition:transform .3s}
+.player.show{transform:translateY(0)}
+.player-progress{width:100%;height:3px;background:var(--bg3);cursor:pointer;position:absolute;top:0;left:0}
+.player-fill{height:100%;background:var(--amber);width:0%}
+.player-play{width:36px;height:36px;border-radius:50%;border:1px solid var(--amber);background:0;color:var(--amber);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.player-info{flex:1;min-width:0}
+.player-title{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.player-sub{font-size:10px;color:var(--text2)}
+.player-close{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:0;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+
+/* GLOBAL BUTTONS */
+.save-fab{position:fixed;bottom:80px;right:20px;z-index:101;background:var(--amber);color:var(--bg);border:none;padding:10px 18px;border-radius:20px;font-weight:600;cursor:pointer;font-family:inherit;font-size:12px;display:none;box-shadow:0 4px 20px rgba(212,132,58,0.4)}
+body.edit-mode .save-fab{display:block}
+.reset-fab{position:fixed;bottom:80px;right:170px;z-index:101;background:0;color:var(--text2);border:1px solid var(--border);padding:10px 18px;border-radius:20px;cursor:pointer;font-family:inherit;font-size:12px;display:none}
+body.edit-mode .reset-fab{display:block}
+
+.edit-banner{position:fixed;top:54px;left:50%;transform:translateX(-50%);background:var(--amber);color:var(--bg);padding:5px 14px;border-radius:0 0 14px 14px;font-size:10.5px;font-weight:500;z-index:99;display:none;white-space:nowrap}
+body.edit-mode .edit-banner{display:block}
+
+/* TESIS BOX */
+.tesis-box{text-align:center;padding:28px;border:1px solid var(--gold);border-radius:10px;margin-bottom:28px}
+.tesis-box h2{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;letter-spacing:4px;margin-bottom:6px}
+.tesis-box p{font-size:13px;color:var(--text2);line-height:1.7;margin-top:6px}
+
+.section-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300;letter-spacing:1px;margin-bottom:14px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+
+.card{padding:16px;border:1px solid var(--border);border-radius:10px;background:var(--bg2);margin-bottom:10px;position:relative}
+.card h3{font-size:14px;font-weight:500;margin-bottom:4px}
+.card-label{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.card p{font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:3px}
+.card .del-btn{position:absolute;top:10px;right:10px}
+
+@media(max-width:768px){
+  .tabs{gap:2px}
+  .tab,.edit-toggle{padding:4px 8px;font-size:10px}
+  .nav{padding:8px 12px}
+  .images-grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}
+}
+</style></head><body>
+
+<nav class="nav">
+  <div>
+    <div class="nav-title">EL ASEXSOR</div>
+    <div class="nav-sub">ÁLBUM 1 — ACEPTACIÓN</div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" data-page="mandala">Mandala</button>
+    <button class="tab" data-page="tracks">Tracklist</button>
+    <button class="tab" data-page="laws">Leyes</button>
+    <button class="tab" data-page="coords">Coordenadas</button>
+    <button class="tab" data-page="team">Equipo</button>
+    <button class="edit-toggle" id="editToggle">✎ Editar</button>
+  </div>
+</nav>
+
+<div class="edit-banner">Modo edición · ⋮⋮ arrastrar · ✕ borrar · click texto editar</div>
+
+<!-- MANDALA -->
+<div class="page active" data-page="mandala">
+  <div class="mandala-wrap" id="mandala"></div>
+  <div class="mandala-note">El mandala se actualiza al editar los títulos en Tracklist</div>
+</div>
+
+<!-- TRACKS -->
+<div class="page" data-page="tracks">
+  <div class="list" id="trackList"></div>
+  <div class="add-row">
+    <button class="add-btn" onclick="addItem('track')">+ Canción</button>
+    <button class="add-btn" onclick="addItem('block')">+ Bloque guion</button>
+    <button class="add-btn" onclick="addItem('header')">+ Sección (Acto)</button>
+    <button class="add-btn" onclick="addItem('divider')">+ Divisor</button>
+  </div>
+</div>
+
+<!-- LAWS -->
+<div class="page" data-page="laws">
+  <div class="tesis-box">
+    <h2>TORO = OTRO</h2>
+    <p contenteditable="false" class="ed" data-key="tesis_main">No podés dar lo que no tenés. La puerta siempre estuvo abierta.</p>
+    <p contenteditable="false" class="ed" data-key="tesis_bug" style="color:var(--red);font-size:11px;font-style:italic">BUG: "Necesito que la vida sea difícil para sentir que valgo."</p>
+    <p contenteditable="false" class="ed" data-key="tesis_law" style="font-size:12px;font-style:italic">El corazón siempre está. A veces lo escuchás, a veces no. Siempre está.</p>
+  </div>
+  <div class="section-title">Las leyes <button class="add-btn" onclick="addLaw()" style="margin-left:auto">+ Ley</button></div>
+  <div id="lawList"></div>
+</div>
+
+<!-- COORDS -->
+<div class="page" data-page="coords">
+  <div class="section-title">Coordenadas del Mago (Parise)</div>
+  <div class="card" style="border-color:var(--gold)">
+    <div class="card-label" style="color:var(--gold)">ADÓNDE</div>
+    <h3 contenteditable="false" class="ed" data-key="coord_adonde_t">CONTACTO</h3>
+    <p contenteditable="false" class="ed" data-key="coord_adonde_b">Vivir en estado de contacto genuino — con vos, con otros, con lo que creás. "Como prender la luz y que fluya."</p>
+  </div>
+  <div class="card" style="border-color:var(--red)">
+    <div class="card-label" style="color:var(--red)">DESDE DÓNDE</div>
+    <h3 contenteditable="false" class="ed" data-key="coord_desde_t">TORO = OTRO</h3>
+    <p contenteditable="false" class="ed" data-key="coord_desde_b">Un tipo que perdió el contacto consigo mismo y lo busca en otros.</p>
+  </div>
+  <div class="card" style="border-color:var(--purple)">
+    <div class="card-label" style="color:var(--purple)">POR DÓNDE</div>
+    <h3 contenteditable="false" class="ed" data-key="coord_por_t">El álbum + show en vivo + ritual</h3>
+    <p contenteditable="false" class="ed" data-key="coord_por_b">El Adónde de los otros como camino. El público ve a Toro hacer contacto en vivo.</p>
+  </div>
+  <div class="card" style="border-color:var(--amber)">
+    <div class="card-label" style="color:var(--amber)">RESULTADO</div>
+    <h3 contenteditable="false" class="ed" data-key="coord_res_t">Las casualidades armónicas</h3>
+    <p contenteditable="false" class="ed" data-key="coord_res_b">Cada vez que dejás de empujar y contactás, el universo responde.</p>
+  </div>
+</div>
+
+<!-- TEAM -->
+<div class="page" data-page="team">
+  <div class="section-title">Equipo <button class="add-btn" onclick="addTeam()" style="margin-left:auto">+ Persona</button></div>
+  <div id="teamList"></div>
+</div>
+
+<!-- PLAYER -->
+<div class="player" id="player">
+  <div class="player-progress" onclick="seekAudio(event)"><div class="player-fill" id="playerFill"></div></div>
+  <button class="player-play" onclick="togglePlay()">▶</button>
+  <div class="player-info">
+    <div class="player-title" id="playerTitle">—</div>
+    <div class="player-sub" id="playerSub">—</div>
+  </div>
+  <button class="player-close" onclick="stopAudio()">✕</button>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()"><img id="lightboxImg"></div>
+
+<button class="save-fab" onclick="saveAll(true)">💾 Guardar</button>
+<button class="reset-fab" onclick="resetAll()">↺ Reset</button>
+
+<audio id="audio"></audio>
+<input type="file" id="hiddenFileInput" style="display:none">
+
+<script>
+// ============================================================
+// IndexedDB for storing audio/image blobs
+// ============================================================
+const DB_NAME='asexsor_db';
+const DB_VERSION=1;
+let db;
+
+function openDB(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(DB_NAME,DB_VERSION);
+    req.onupgradeneeded=e=>{
+      const d=e.target.result;
+      if(!d.objectStoreNames.contains('files'))d.createObjectStore('files');
+    };
+    req.onsuccess=e=>{db=e.target.result;resolve(db)};
+    req.onerror=e=>reject(e);
+  });
+}
+
+function dbSet(key,blob){
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction('files','readwrite');
+    tx.objectStore('files').put(blob,key);
+    tx.oncomplete=resolve;tx.onerror=reject;
+  });
+}
+
+function dbGet(key){
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction('files','readonly');
+    const req=tx.objectStore('files').get(key);
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=reject;
+  });
+}
+
+function dbDel(key){
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction('files','readwrite');
+    tx.objectStore('files').delete(key);
+    tx.oncomplete=resolve;tx.onerror=reject;
+  });
+}
+
+async function getAudioURL(itemId){
+  const blob=await dbGet('audio_'+itemId);
+  if(blob)return URL.createObjectURL(blob);
+  // fallback: file paths relative to HTML
+  const item=state.items.find(i=>i.id===itemId);
+  return item?.audioPath||null;
+}
+
+async function getImageURL(imgId){
+  const blob=await dbGet('img_'+imgId);
+  return blob?URL.createObjectURL(blob):null;
+}
+
+// ============================================================
+// STATE
+// ============================================================
+const defaultState={
+  items:[
+    {id:'h1',type:'header',text:'Prólogo',color:'#c4537a'},
+    {id:'t0',type:'track',num:'0',color:'#c4537a',title:'Intro — El AsexSor',sub:'María: "¿Cuál es tu fantasía?"',status:'',audioPath:'audio_00_intro.mp3',lyrics:'[Llamadas fallidas]\n\nMARÍA: "Pará. ¿Vos estás bien?"\nTORO: "Sí, obvio."\nMARÍA: "¿Cuál es tu fantasía?"\n\n[Silencio largo]',guion:'Plano fijo. Penumbra. Solo bobinas reflejando. La mano toma el teléfono. Marca. Lo cortan. Hasta que una lead no corta — lo escucha. Lo lee.',note:'La pregunta que invierte la atención.',images:[]},
+    {id:'h2',type:'header',text:'Acto I — Vacío',color:'#d4843a'},
+    {id:'t1',type:'track',num:'1',color:'#d4843a',title:'Amando el dolor',sub:'Nace el don y la trampa',status:'written',audioPath:'audio_01_amando.mp3',lyrics:'agarra mi mano y no tengas miedo\nno se a donde voy, so lo que llevo\n\nel destino está morboso\ny los tiempos muy duros\nel pecho amoroso como escudo\n\nno quiero sentir que esto es para siempre\nes mas valiente amar sabiendo que hay muerte\n\nsi me ven sensible ya no me tapen\nestoy sintiendo todo\nestoy amando el dolor\n\nen el silencio está todas las orquestas\nen la oscuridad todos los colores\nen la muerte toda la vida\n\nme fui y ahora estoy en todas partes\nsiempre contigo\n\nque si quiero mas? pues claro que quiero\nla eternidad es solo el comienzo\nme llaman ambicioso y estoy orgulloso\nes que te quiero a vos y en vos esta todo',guion:'Plano medio 50mm. Ámbar tenue. Bobinas girando. Por primera vez no usa el script — habla desde el pecho.',note:'Nace el don Y la trampa. Da antes de tener.',images:[]},
+    {id:'t2',type:'track',num:'2',color:'#d4843a',title:'No puedo soltarte',sub:'El OTRO que no suelta',status:'written',audioPath:'audio_02_nopuedo.mp3',lyrics:'siento rara tu luz\nvás vendiendo tu amor\nme da bronca y dolor\nque alguien pague el calor\nque me dabas antes\nantes de archivarme\n\nTu también cambiaste\nO nunca te mostraste?\nno puedo soltarte\n\nComo pides que pueda olvidarte\nsi te apareces en todas partes\nlo intente todo, no puedo soltarte\n\nVos eras trinity y yo era neo\n\nPara estar mejor escribí sonríe en el espejo\nnada cambio eras vos mi capricho viejo',guion:'Plano medio 35mm. Frío rosado/lavanda. Encorvado sobre la mesa. Nudillos blancos.',note:'Busca en chats viejos lo que busca a las 3am: intimidad ajena.',images:[]},
+    {id:'h3',type:'header',text:'Acto II — Poder',color:'#b8871a'},
+    {id:'t3',type:'track',num:'3',color:'#b8871a',title:'Se te pasó el tren',sub:'Anestesia disfrazada de coraje',status:'written',audioPath:'audio_03_tren.mp3',lyrics:'Ni una hora más voy a soñarte\nNi un segundo mas voy a sentirte\nEste jugador no va a esperarte\nSe te paso el tren\n\nLa vida es un instante\ny el amor va a quienes pelean por el\nSe te pasa el tren',guion:'Plano americano ángulo bajo. Ámbar creciente. Se para. Pierna sobre el escritorio. Speaker.',note:'ANESTESIA, NO CORAJE. Cambió de droga.',images:[]},
+    {id:'t4',type:'track',num:'4',color:'#b8871a',title:'El tibu',sub:'El animal despierta',status:'demo',audioPath:'',lyrics:'Perdon, por querer desnudarte\nes que me dio hambre\nmodo tiburon\nvoy a comerte tu corazon\n\n[fragmento]',guion:'Travelling lateral 24mm. Ámbar lleno. Camina por primera vez.',note:'"Desnudar" = hambre de verdad.',images:[]},
+    {id:'b1',type:'block',title:'El Jefe llama',sub:'"Les das permiso para desear"',guion:'Plano fijo 50mm. 1 minuto sin corte. Ámbar estable. El teléfono suena. No llama Toro — lo llaman. Escucha sin hablar por primera vez.\n\nEL JEFE: "Vos no vendés un producto. Vos vendés la versión de ellos mismos que no se animan a ser. Les das permiso para desear."',note:'El Jefe = padre + mentor. La herramienta es neutral, Toro decide cómo usarla.',images:[]},
+    {id:'h4',type:'header',text:'Acto III — Monstruo hermoso',color:'#c4453a'},
+    {id:'t5',type:'track',num:'5',color:'#c4453a',title:'Histeria 101',sub:'Nada lo llena',status:'written',audioPath:'audio_05_histeria.mp3',lyrics:'demasiadas lujurias en el colchón\naun asi no siento satisfacción\nuna especie de parasito come corazón\n\nno soy yo, esta mi Histeria\nmis fantasías no son sanas\n\nNo pierdas nunca mas tu fe',guion:'Handheld 24mm. Rojo estroboscópico. Doble exposición.',note:'Necesita monstruos contra los cuales pelear.',images:[]},
+    {id:'t6',type:'track',num:'6',color:'#c4453a',title:'Fantasía Final',sub:'La cima del OTRO',status:'written',audioPath:'audio_06_fantasia.wav',lyrics:'sigamos las instrucciones\nde mi fantasia final\nTransformemos en arte lo carnal\n\nenseñame tu furia, se mi maestro\nnuestra liturgia dentro del sexo\n\n¿Esta mal soñar?',guion:'Plano medio 50mm. Rojo profundo + humo. PORTADA DEL ÁLBUM. Sentado como un rey.',note:'La cima del OTRO. "Enseñame tu furia" = grieta del monstruo.',images:[]},
+    {id:'ti',type:'track',num:'INT',color:'#605848',title:'Intacto — Tal vez soy yo, tal vez sos vos',sub:'Despedida al OTRO',status:'',audioPath:'audio_int_intacto.wav',lyrics:'Mi papa decia que hoy en dia\nno se ama como se deberia\n\nTal vez soy yo, tal vez sos vos\n\nEl amor que me diste no lo perdiste\nvolvera de otra manera\n\nEl amor sigue intacto',guion:'Plano medio suave 50mm. Último ámbar. Despedida al Tommy migajero.',note:'"El amor sigue intacto" cambia de significado después del giro.',images:[]},
+    {id:'b2',type:'block',title:'Principio de sincronicidad',sub:'"Todo fue necesario"',guion:'Cenital bobinas. El ámbar se apaga. Azul frío entra. Las bobinas se detienen. Silencio.\n\nVOZ: "Todas las cosas importantes que te pasaron fueron por sincronicidad. Todo fue necesario para llegar acá."',note:'Lo que parecía azar era diseño.',images:[]},
+    {id:'d1',type:'divider',text:'OTRO MUERE — TORO NACE'},
+    {id:'h5',type:'header',text:'Acto IV — Descenso',color:'#c4537a'},
+    {id:'t7',type:'track',num:'7',color:'#c4537a',title:'Corazón en el inframundo',sub:'"Mi error no fue desear, fue esconderlo"',status:'process',audioPath:'',lyrics:'[BORRADOR]\n\nen la oscuridad, buscando algo que alumbre\nbajo por ti, aunque ya es octubre\n\nencerrado en emociones\nespiando tus rincones\nescondiendo mis razones\n\nno sé qué busco en la intimidad\n\nmi error no fue desear — fue que la escondí\nel cielo y el infierno a un centímetro de distancia\n\nlo que buscaba afuera siempre estuvo adentro\nme sigo chocando, me sigo buscando, me sigo encontrando',guion:'Dutch angle 35mm. Azul frío + ámbar moribundo. Bobinas DETENIDAS. Tres movimientos: M1) Baja por ella. M2) Todo se apaga (Morfeo, solo el latido). M3) Se encuentra a él.',note:'POR ESCRIBIR. PUNTO DE GIRO.',images:[]},
+    {id:'t8',type:'track',num:'8',color:'#c4537a',title:'Al final del túnel',sub:'TORO elige amar(se)',status:'written',audioPath:'audio_08_tunel.mp3',lyrics:'Me pregunto si eres tú\nLa luz que veo al final del túnel\n\nSolo quiero amar',guion:'Gran angular 24mm. PRIMERA LUZ NATURAL. Ventana nueva. Luz dorada.',note:'La jaula siempre estuvo abierta.',images:[]},
+    {id:'h6',type:'header',text:'Acto V — Luz (Aceptación)',color:'#7a6abf'},
+    {id:'t9',type:'track',num:'9',color:'#7a6abf',title:'Una grieta',sub:'Ascensión — confiesa',status:'written',audioPath:'audio_09_grieta.wav',lyrics:'estoy parado en LA PUERTA\ncon miedo a cruzar\n\ncompre con la belleza de lo superficial\nahora amo tus ojos por su honestidad\n\ndame una grieta donde el amor se pueda expresar',guion:'Contraluz violeta 50mm. Línea de luz cruza la pared.',note:'Primera confesión. "Compré con lo superficial."',images:[]},
+    {id:'t10',type:'track',num:'10',color:'#7a6abf',title:'El Error Es Divino',sub:'El perdón',status:'demo',audioPath:'',lyrics:'El Error se escribió en tu guion\nVino a traer lo divino\n\nahora ya no me voy a culpar más\ncada pequeño error me trajo hasta acá\n\nla culpa ya no sirve de nada\nla puedo soltar',guion:'Violeta → dorado. Frente al mic. Se perdona.',note:'Sin perdón no hay liberación.',images:[]},
+    {id:'t11',type:'track',num:'11',color:'#7a6abf',title:'La puta de Dios / Jehová Debug',sub:'"¿Y si la vida no es difícil?"',status:'process',audioPath:'',lyrics:'Podés ser la puta del diablo\nO la zorra De Dios\nYo elijo las dos\n\n¿Y si la vida no es difícil?\nAcaso hice todo mal\n¿Y si el amor no hay que ganarlo?\nAcaso amé de verdad\n\n[Se levanta. Umbral. Luz.]',guion:'Gran angular → travelling. Dorado → BLANCO. Se levanta POR PRIMERA VEZ. Umbral. No cruza.',note:'CIERRE. Las preguntas finales. Álbum 2 empieza del otro lado.',images:[]}
+  ],
+  laws:[
+    {n:'I',t:'El corazón siempre está.',b:'A veces lo escuchás, a veces no. No es un recurso — es el lugar desde donde se vive.',song:'Track 1'},
+    {n:'II',t:'Lo que más te duele es donde dejaste lo que más te importa.',b:'El inframundo no es un concepto. Es un lugar que ya conocés.',song:'Track 7'},
+    {n:'III',t:'Lo primero que hacés con tu don es usarlo mal. También es parte.',b:'Usaste tu magia para lo pequeño antes de poder usarla para lo grande.',song:'Tracks 3-6'},
+    {n:'IV',t:'No podés verte entero sin otro. Necesitás el espejo.',b:'María no le da una respuesta — le da una pregunta.',song:'Tracks 2, 8'},
+    {n:'V',t:'El sacrificio es tu identidad anterior.',b:'Todos los Toros anteriores tienen que morir.',song:'Tracks 10-11'},
+    {n:'VI',t:'Fuiste hecho incompleto a propósito. Lo completo no busca.',b:'Si fueras perfecto no llamarías a nadie.',song:'Track 11'},
+    {n:'DEBUG',t:'Tu error nunca fue desear. Fue esconder el deseo.',b:'De Secretos a El AsexSor. La puerta siempre estuvo abierta.',song:''}
+  ],
+  team:[
+    {n:'Tommy (Tomás Ariel González)',r:'ARTISTA / CREADOR / TORO',d:'Adónde: CONTACTO.'},
+    {n:'Connie',r:'DIRECTORA CREATIVA',d:'Siru, octubre. Estilismo, concepto visual.'},
+    {n:'Fede',r:'PRODUCTOR MUSICAL',d:'Producción, mezcla, grabación en vivo.'},
+    {n:'August',r:'SOUNDTRACKS / DIRECCIÓN SONORA',d:'Atmósfera, interludios, sensibilidad.'}
+  ],
+  meta:{}
+};
+
+let state=JSON.parse(JSON.stringify(defaultState));
+let editMode=false;
+let currentAudioId='';
+const audio=document.getElementById('audio');
+
+// ============================================================
+// STORAGE
+// ============================================================
+function loadState(){
+  try{
+    const s=localStorage.getItem('asexsor_state');
+    if(s){
+      const parsed=JSON.parse(s);
+      // Migrate: ensure all items have images array
+      parsed.items?.forEach(i=>{if(!i.images)i.images=[]});
+      state=parsed;
+    }
+  }catch(e){console.error(e)}
+}
+
+function saveAll(showFeedback){
+  localStorage.setItem('asexsor_state',JSON.stringify(state));
+  renderMandala();
+  if(showFeedback){
+    const btn=document.querySelector('.save-fab');
+    btn.textContent='✓ Guardado';
+    setTimeout(()=>btn.textContent='💾 Guardar',1500);
+  }
+}
+
+function resetAll(){
+  if(!confirm('¿Resetear TODO al estado original?'))return;
+  localStorage.removeItem('asexsor_state');
+  // Clear IndexedDB
+  if(db){
+    const tx=db.transaction('files','readwrite');
+    tx.objectStore('files').clear();
+  }
+  location.reload();
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function esc(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[c])}
+function statusBadge(s){if(s==='written')return '<span class="badge written">Escrita</span>';if(s==='demo')return '<span class="badge demo">Sin demo</span>';if(s==='process')return '<span class="badge process">En proceso</span>';return''}
+
+function renderTracks(){
+  const c=document.getElementById('trackList');
+  let h='';
+  state.items.forEach((it,idx)=>{
+    if(it.type==='header'){
+      h+=`<div class="row" data-id="${it.id}"><div class="hd"><span class="handle">⋮⋮</span><div class="hd-text ed" data-id="${it.id}" data-field="text" style="color:${it.color}">${esc(it.text)}</div><button class="del-btn" onclick="delItem('${it.id}')">✕</button></div></div>`;
+    }else if(it.type==='divider'){
+      h+=`<div class="row" data-id="${it.id}"><div class="dv"><span class="handle">⋮⋮</span><span class="dv-text ed" data-id="${it.id}" data-field="text">${esc(it.text)}</span><button class="del-btn" onclick="delItem('${it.id}')">✕</button></div></div>`;
+    }else if(it.type==='block'){
+      h+=`<div class="row" data-id="${it.id}">
+<div class="bk" onclick="toggleItem('${it.id}',event)">
+<span class="handle">⋮⋮</span>
+<div class="info"><div class="title ed" data-id="${it.id}" data-field="title">${esc(it.title)}</div><div class="subtitle ed" data-id="${it.id}" data-field="sub">${esc(it.sub||'')}</div></div>
+<button class="del-btn" onclick="delItem('${it.id}')">✕</button>
+<span class="toggle-arrow">▸</span>
+</div>
+<div class="expand" id="exp-${it.id}">
+${renderExpand(it,false)}
+</div>
+</div>`;
+    }else if(it.type==='track'){
+      const isInt=it.num==='INT';
+      const titleColor=isInt?'color:var(--text2)':'';
+      h+=`<div class="row" data-id="${it.id}">
+<div class="tk" onclick="toggleItem('${it.id}',event)">
+<span class="handle">⋮⋮</span>
+<button class="play-btn ${currentAudioId===it.id?'playing':''}" data-track="${it.id}" onclick="playTrack('${it.id}',event)" ${isInt?'style="border-color:'+it.color+';color:'+it.color+'"':''}>▶</button>
+<div class="tk-num ${isInt?'int':''}" style="color:${it.color}"><span class="ed" data-id="${it.id}" data-field="num">${esc(it.num)}</span></div>
+<div class="info"><div class="title ed" data-id="${it.id}" data-field="title" style="${titleColor}">${esc(it.title)}</div><div class="subtitle ed" data-id="${it.id}" data-field="sub">${esc(it.sub)}</div></div>
+${statusBadge(it.status)}
+<button class="audio-btn ${it.audioPath?'has-audio':''}" onclick="uploadAudio('${it.id}',event)">${it.audioPath?'✓ Audio':'+ Audio'}</button>
+<button class="del-btn" onclick="delItem('${it.id}')">✕</button>
+<span class="toggle-arrow">▸</span>
+</div>
+<div class="expand" id="exp-${it.id}">
+${renderExpand(it,true)}
+</div>
+</div>`;
+    }
+  });
+  c.innerHTML=h;
+  attachContentEditable();
+  initSortable();
+  renderAllImages();
+}
+
+function renderExpand(it,hasLyrics){
+  let h='';
+  if(hasLyrics){
+    h+=`<div class="exp-section"><div class="exp-label">Letra</div><div class="exp-content lyrics ed" data-id="${it.id}" data-field="lyrics">${esc(it.lyrics||'')}</div></div>`;
+  }
+  h+=`<div class="exp-section"><div class="exp-label">Guion / Escena</div><div class="exp-content ed" data-id="${it.id}" data-field="guion">${esc(it.guion||'')}</div></div>`;
+  h+=`<div class="exp-section"><div class="exp-label">Nota</div><div class="exp-content ed" data-id="${it.id}" data-field="note" style="font-style:italic;color:var(--text3)">${esc(it.note||'')}</div></div>`;
+  h+=`<div class="exp-section"><div class="exp-label">Imágenes de referencia</div><div class="images-grid" id="imgs-${it.id}"></div></div>`;
+  return h;
+}
+
+async function renderAllImages(){
+  for(const it of state.items){
+    if(!it.images)continue;
+    const grid=document.getElementById('imgs-'+it.id);
+    if(!grid)continue;
+    let html='';
+    for(const imgId of it.images){
+      const url=await getImageURL(imgId);
+      if(url){
+        html+=`<div class="img-item"><img src="${url}" onclick="openLightbox('${url}')"><button class="img-del" onclick="delImage('${it.id}','${imgId}',event)">✕</button></div>`;
+      }
+    }
+    html+=`<div class="img-add" onclick="uploadImage('${it.id}')">+</div>`;
+    grid.innerHTML=html;
+  }
+}
+
+function renderLaws(){
+  const c=document.getElementById('lawList');
+  let h='';
+  state.laws.forEach((l,i)=>{
+    const isDebug=l.n==='DEBUG';
+    h+=`<div class="card"${isDebug?' style="border-color:var(--red)"':''}>
+<div class="card-label" style="color:${isDebug?'var(--red)':'var(--gold)'}"><span class="ed-law" data-i="${i}" data-field="n">${esc(l.n)}</span></div>
+<h3 class="ed-law" data-i="${i}" data-field="t">${esc(l.t)}</h3>
+<p class="ed-law" data-i="${i}" data-field="b">${esc(l.b)}</p>
+${l.song?`<p class="ed-law" data-i="${i}" data-field="song" style="font-size:10px;color:var(--gold)">${esc(l.song)}</p>`:''}
+<button class="del-btn" onclick="delLaw(${i})">✕</button>
+</div>`;
+  });
+  c.innerHTML=h;
+  attachContentEditable();
+}
+
+function renderTeam(){
+  const c=document.getElementById('teamList');
+  let h='';
+  state.team.forEach((m,i)=>{
+    h+=`<div class="card">
+<h3 class="ed-team" data-i="${i}" data-field="n">${esc(m.n)}</h3>
+<div class="card-label" style="color:var(--amber)"><span class="ed-team" data-i="${i}" data-field="r">${esc(m.r)}</span></div>
+<p class="ed-team" data-i="${i}" data-field="d">${esc(m.d)}</p>
+<button class="del-btn" onclick="delTeam(${i})">✕</button>
+</div>`;
+  });
+  c.innerHTML=h;
+  attachContentEditable();
+}
+
+function attachContentEditable(){
+  document.querySelectorAll('.ed').forEach(el=>{
+    el.contentEditable=editMode;
+    el.onblur=()=>{
+      const id=el.dataset.id;const field=el.dataset.field;
+      const item=state.items.find(i=>i.id===id);
+      if(item){item[field]=el.innerText;saveAll();}
+      else{
+        // tesis/coord fields
+        const key=el.dataset.key;
+        if(key){state.meta[key]=el.innerText;saveAll();}
+      }
+    };
+  });
+  document.querySelectorAll('.ed-law').forEach(el=>{
+    el.contentEditable=editMode;
+    el.onblur=()=>{
+      const i=parseInt(el.dataset.i);const f=el.dataset.field;
+      if(state.laws[i]){state.laws[i][f]=el.innerText;saveAll();}
+    };
+  });
+  document.querySelectorAll('.ed-team').forEach(el=>{
+    el.contentEditable=editMode;
+    el.onblur=()=>{
+      const i=parseInt(el.dataset.i);const f=el.dataset.field;
+      if(state.team[i]){state.team[i][f]=el.innerText;saveAll();}
+    };
+  });
+  // tesis/coord ed by key
+  document.querySelectorAll('[data-key]').forEach(el=>{
+    el.contentEditable=editMode;
+    el.onblur=()=>{
+      const k=el.dataset.key;
+      state.meta[k]=el.innerText;
+      saveAll();
+    };
+    // restore from state.meta if exists
+    if(state.meta&&state.meta[el.dataset.key])el.innerText=state.meta[el.dataset.key];
+  });
+}
+
+// ============================================================
+// SORTABLE (drag & drop with library)
+// ============================================================
+let sortable;
+function initSortable(){
+  const list=document.getElementById('trackList');
+  if(sortable)sortable.destroy();
+  sortable=Sortable.create(list,{
+    handle:'.handle',
+    animation:150,
+    ghostClass:'sortable-ghost',
+    chosenClass:'sortable-chosen',
+    disabled:!editMode,
+    onEnd:(evt)=>{
+      const moved=state.items.splice(evt.oldIndex,1)[0];
+      state.items.splice(evt.newIndex,0,moved);
+      saveAll();
+      // re-render to update indices and del-buttons
+      renderTracks();
+    }
+  });
+}
+
+// ============================================================
+// INTERACTIONS
+// ============================================================
+function toggleItem(id,e){
+  if(e.target.closest('.play-btn')||e.target.closest('.audio-btn')||e.target.closest('.del-btn')||e.target.closest('.handle')||e.target.closest('[contenteditable=true]')||e.target.closest('button'))return;
+  const exp=document.getElementById('exp-'+id);
+  const head=exp.previousElementSibling;
+  const isOpen=exp.classList.contains('open');
+  if(!isOpen){exp.classList.add('open');head.classList.add('open');}
+  else{exp.classList.remove('open');head.classList.remove('open');}
+}
+
+async function playTrack(id,e){
+  e.stopPropagation();
+  const url=await getAudioURL(id);
+  if(!url){alert('Sin audio para este track. Cargá uno con el botón Audio en modo edición.');return;}
+  const item=state.items.find(i=>i.id===id);
+  audio.src=url;
+  audio.play();
+  currentAudioId=id;
+  document.getElementById('player').classList.add('show');
+  document.getElementById('playerTitle').textContent=item.title;
+  document.getElementById('playerSub').textContent=item.sub;
+  document.querySelectorAll('.play-btn').forEach(b=>b.classList.remove('playing'));
+  document.querySelector(`.play-btn[data-track="${id}"]`)?.classList.add('playing');
+}
+
+function togglePlay(){
+  if(!audio.src)return;
+  if(audio.paused)audio.play();else audio.pause();
+}
+
+function stopAudio(){
+  audio.pause();audio.src='';currentAudioId='';
+  document.getElementById('player').classList.remove('show');
+  document.getElementById('playerFill').style.width='0%';
+  document.querySelectorAll('.play-btn').forEach(b=>b.classList.remove('playing'));
+}
+
+function seekAudio(e){
+  if(!audio.duration)return;
+  const r=e.currentTarget.getBoundingClientRect();
+  audio.currentTime=(e.clientX-r.left)/r.width*audio.duration;
+}
+
+audio.addEventListener('timeupdate',()=>{
+  if(audio.duration)document.getElementById('playerFill').style.width=(audio.currentTime/audio.duration*100)+'%';
+});
+audio.addEventListener('ended',()=>{
+  document.querySelectorAll('.play-btn').forEach(b=>b.classList.remove('playing'));
+});
+
+// ============================================================
+// FILE UPLOADS
+// ============================================================
+function uploadAudio(itemId,e){
+  e.stopPropagation();
+  const input=document.createElement('input');
+  input.type='file';
+  input.accept='audio/*';
+  input.onchange=async(ev)=>{
+    const file=ev.target.files[0];if(!file)return;
+    await dbSet('audio_'+itemId,file);
+    const item=state.items.find(i=>i.id===itemId);
+    if(item)item.audioPath='__indexeddb__';
+    saveAll();
+    renderTracks();
+  };
+  input.click();
+}
+
+function uploadImage(itemId){
+  const input=document.createElement('input');
+  input.type='file';
+  input.accept='image/*';
+  input.multiple=true;
+  input.onchange=async(ev)=>{
+    const files=Array.from(ev.target.files);
+    for(const file of files){
+      const imgId='i_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+      await dbSet('img_'+imgId,file);
+      const item=state.items.find(i=>i.id===itemId);
+      if(item){if(!item.images)item.images=[];item.images.push(imgId);}
+    }
+    saveAll();
+    renderAllImages();
+  };
+  input.click();
+}
+
+async function delImage(itemId,imgId,e){
+  e.stopPropagation();
+  if(!confirm('¿Borrar esta imagen?'))return;
+  const item=state.items.find(i=>i.id===itemId);
+  if(!item)return;
+  item.images=item.images.filter(x=>x!==imgId);
+  await dbDel('img_'+imgId);
+  saveAll();
+  renderAllImages();
+}
+
+function openLightbox(url){
+  document.getElementById('lightboxImg').src=url;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox(){document.getElementById('lightbox').classList.remove('open');}
+
+// ============================================================
+// CRUD
+// ============================================================
+function addItem(type){
+  const id=type[0]+'_'+Date.now();
+  let n;
+  if(type==='track')n={id,type:'track',num:'?',color:'#d4843a',title:'Nueva canción',sub:'subtítulo',status:'',audioPath:'',lyrics:'',guion:'',note:'',images:[]};
+  else if(type==='block')n={id,type:'block',title:'Nuevo bloque',sub:'',guion:'',note:'',images:[]};
+  else if(type==='header')n={id,type:'header',text:'Nueva sección',color:'#d4843a'};
+  else if(type==='divider')n={id,type:'divider',text:'NUEVO DIVISOR'};
+  state.items.push(n);
+  saveAll();
+  renderTracks();
+}
+
+async function delItem(id){
+  if(!confirm('¿Borrar este item?'))return;
+  const item=state.items.find(i=>i.id===id);
+  if(item?.images){for(const ig of item.images)await dbDel('img_'+ig);}
+  await dbDel('audio_'+id);
+  state.items=state.items.filter(i=>i.id!==id);
+  saveAll();
+  renderTracks();
+}
+
+function addLaw(){state.laws.push({n:'?',t:'Nueva ley',b:'',song:''});saveAll();renderLaws();}
+function delLaw(i){if(!confirm('¿Borrar?'))return;state.laws.splice(i,1);saveAll();renderLaws();}
+function addTeam(){state.team.push({n:'Nueva persona',r:'ROL',d:''});saveAll();renderTeam();}
+function delTeam(i){if(!confirm('¿Borrar?'))return;state.team.splice(i,1);saveAll();renderTeam();}
+
+// ============================================================
+// MANDALA
+// ============================================================
+function renderMandala(){
+  const cx=400,cy=420,r=270;
+  
+  // Build tracks list with their act (based on headers before them)
+  const realTracks=[];
+  let currentActColor='#d4843a';
+  let currentActName='';
+  state.items.forEach(it=>{
+    if(it.type==='header'){
+      currentActColor=it.color||'#d4843a';
+      currentActName=it.text||'';
+    }else if(it.type==='track'&&it.num!=='INT'&&it.num!=='0'&&it.num!=='?'){
+      realTracks.push({...it,actColor:currentActColor,actName:currentActName});
+    }
+  });
+  
+  const n=realTracks.length;
+  if(n===0){
+    document.getElementById('mandala').innerHTML='<div style="text-align:center;color:var(--text3);padding:40px">Agregá canciones para ver el mandala</div>';
+    return;
+  }
+  
+  // Determine starting angle so first track is at top
+  // Distribute evenly around the circle
+  const startAngle=-90; // top
+  const angleStep=360/n;
+  
+  let svg=`<svg viewBox="0 0 800 900" class="mandala-svg" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<marker id="cycleArrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L8 4L0 8z" fill="#605848"/></marker>
+<marker id="prologoArrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L8 4L0 8z" fill="#c4537a"/></marker>
+</defs>
+
+<!-- Outer orbit -->
+<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#2a2420" stroke-width="0.75"/>`;
+
+  // Build act arcs — group consecutive tracks by act color
+  const actGroups=[];
+  let cur=null;
+  realTracks.forEach((t,i)=>{
+    if(!cur||cur.color!==t.actColor){
+      if(cur)actGroups.push(cur);
+      cur={color:t.actColor,name:t.actName,start:i,end:i};
+    }else{
+      cur.end=i;
+    }
+  });
+  if(cur)actGroups.push(cur);
+  
+  // Draw act arcs (with padding between)
+  const arcPadding=2; // degrees of padding on each side
+  actGroups.forEach(g=>{
+    const startAng=startAngle+g.start*angleStep-angleStep/2+arcPadding;
+    const endAng=startAngle+g.end*angleStep+angleStep/2-arcPadding;
+    const sa=startAng*Math.PI/180;
+    const ea=endAng*Math.PI/180;
+    const x1=cx+r*Math.cos(sa),y1=cy+r*Math.sin(sa);
+    const x2=cx+r*Math.cos(ea),y2=cy+r*Math.sin(ea);
+    const large=(endAng-startAng)>180?1:0;
+    svg+=`<path d="M${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2}" fill="none" stroke="${g.color}" stroke-width="18" opacity="0.1" stroke-linecap="round"/>`;
+    
+    // Act label
+    const labelAng=(startAng+endAng)/2;
+    const labelRad=r-32;
+    const lx=cx+labelRad*Math.cos(labelAng*Math.PI/180);
+    const ly=cy+labelRad*Math.sin(labelAng*Math.PI/180);
+    const cleanName=(g.name||'').replace(/^Acto\s+\w+\s*[—-]\s*/i,'').replace(/\s*\([^)]+\)/,'').trim().toUpperCase();
+    if(cleanName){
+      svg+=`<text x="${lx}" y="${ly}" text-anchor="middle" font-family="DM Sans" font-size="9.5" fill="${g.color}" font-weight="600" letter-spacing="1.8" opacity="0.85">${esc(cleanName)}</text>`;
+    }
+  });
+
+  // Center
+  svg+=`<circle cx="${cx}" cy="${cy}" r="58" fill="#12100e" stroke="#2a2420" stroke-width="0.75"/>
+<text x="${cx}" y="${cy-12}" text-anchor="middle" font-family="Cormorant Garamond" font-size="13" fill="#605848" letter-spacing="3" text-decoration="line-through">OTRO</text>
+<text x="${cx}" y="${cy+10}" text-anchor="middle" font-family="Cormorant Garamond" font-size="18" fill="#e8e0d4" letter-spacing="3">TORO</text>
+<text x="${cx}" y="${cy+26}" text-anchor="middle" font-family="DM Sans" font-size="9" fill="#605848" font-style="italic">¿cual es tu fantasia?</text>`;
+
+  // Prologo (above first track)
+  const firstAng=startAngle*Math.PI/180;
+  const px=cx+(r+50)*Math.cos(firstAng);
+  const py=cy+(r+50)*Math.sin(firstAng);
+  svg+=`<circle cx="${px}" cy="${py-5}" r="4" fill="#c4537a" opacity="0.6"/>
+<text x="${px}" y="${py-20}" text-anchor="middle" font-family="DM Sans" font-size="9" fill="#c4537a" font-weight="500" letter-spacing="1">PROLOGO</text>
+<text x="${px}" y="${py-32}" text-anchor="middle" font-family="DM Sans" font-size="7.5" fill="#605848" font-style="italic">Toro llama a Maria</text>
+<line x1="${px}" y1="${py-1}" x2="${px+(cx-px)*0.04}" y2="${py-1+(cy-py)*0.04}" stroke="#c4537a" stroke-width="1" opacity="0.4"/>`;
+  
+  // Tracks around the circle
+  realTracks.forEach((t,i)=>{
+    const angle=startAngle+i*angleStep;
+    const a=angle*Math.PI/180;
+    const x=cx+r*Math.cos(a),y=cy+r*Math.sin(a);
+    // Text direction: outward from center
+    const normAng=((angle%360)+360)%360;
+    const isLeft=normAng>90&&normAng<270;
+    const tx=isLeft?x-16:x+16;
+    const tAnchor=isLeft?'end':'start';
+    const isUnwritten=t.status==='process'||t.status==='demo';
+    
+    if(isUnwritten){
+      svg+=`<circle cx="${x}" cy="${y}" r="9" fill="none" stroke="${t.color}" stroke-width="1.8" stroke-dasharray="3,2" style="cursor:pointer" onclick="jumpToTrack('${t.id}')"/>`;
+    }else{
+      svg+=`<circle cx="${x}" cy="${y}" r="8" fill="${t.color}" stroke="#0a0807" stroke-width="2" style="cursor:pointer" onclick="jumpToTrack('${t.id}')"/>`;
+    }
+    
+    // Number positioned just inside the circle's text-side
+    const numOffsetX=isLeft?-2:2;
+    svg+=`<text x="${tx+numOffsetX}" y="${y-3}" text-anchor="${tAnchor}" font-family="Cormorant Garamond" font-size="18" fill="${t.color}" font-weight="500">${esc(t.num)}</text>
+<text x="${tx}" y="${y+12}" text-anchor="${tAnchor}" font-family="DM Sans" font-size="11" fill="#e8e0d4" font-weight="500">${esc(t.title.substring(0,32))}</text>
+<text x="${tx}" y="${y+25}" text-anchor="${tAnchor}" font-family="DM Sans" font-size="9" fill="#a09888">${esc((t.sub||'').substring(0,38))}</text>`;
+  });
+  
+  // Cycle arrow: last track → first track (album 2 indicator)
+  if(realTracks.length>1){
+    const lastAng=(startAngle+(n-1)*angleStep)*Math.PI/180;
+    const firstAng2=startAngle*Math.PI/180;
+    const lx=cx+(r+18)*Math.cos(lastAng);
+    const ly=cy+(r+18)*Math.sin(lastAng);
+    const fx=cx+(r+18)*Math.cos(firstAng2);
+    const fy=cy+(r+18)*Math.sin(firstAng2);
+    // Control point above
+    const cpx=cx;
+    const cpy=cy-r-80;
+    svg+=`<path d="M${lx} ${ly} Q ${cpx} ${cpy} ${fx-15} ${fy-8}" fill="none" stroke="#605848" stroke-width="0.75" stroke-dasharray="3,3" marker-end="url(#cycleArrow)" opacity="0.6"/>
+<text x="${cpx}" y="${cpy+25}" text-anchor="middle" font-family="DM Sans" font-size="9" fill="#605848" font-style="italic">obra abierta — album 2</text>`;
+  }
+  
+  // Divider line in middle (OTRO muere — TORO nace)
+  // Find approximate midpoint of tracks
+  if(n>=4){
+    svg+=`<line x1="${cx-r-40}" y1="${cy+r+45}" x2="${cx+r+40}" y2="${cy+r+45}" stroke="#2a2420" stroke-width="0.5" stroke-dasharray="2,4" opacity="0.4"/>`;
+  }
+  
+  // Tesis box at bottom
+  svg+=`<rect x="${cx-220}" y="${cy+330}" width="440" height="60" rx="6" fill="none" stroke="#b8871a" stroke-width="0.75"/>
+<text x="${cx}" y="${cy+350}" text-anchor="middle" font-family="DM Sans" font-size="11" fill="#b8871a" font-weight="500" letter-spacing="1">TORO = OTRO — Album 1: ACEPTACION</text>
+<text x="${cx}" y="${cy+366}" text-anchor="middle" font-family="DM Sans" font-size="10" fill="#a09888">La puerta siempre estuvo abierta.</text>
+<text x="${cx}" y="${cy+381}" text-anchor="middle" font-family="DM Sans" font-size="9" fill="#605848" font-style="italic">El corazon siempre esta. A veces lo escuchas, a veces no.</text>
+</svg>`;
+  document.getElementById('mandala').innerHTML=svg;
+}
+
+function jumpToTrack(id){
+  // Switch to tracks tab
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelector('.tab[data-page="tracks"]').classList.add('active');
+  document.querySelector('.page[data-page="tracks"]').classList.add('active');
+  // Scroll to and open the track
+  setTimeout(()=>{
+    const row=document.querySelector(`.row[data-id="${id}"]`);
+    if(row){
+      row.scrollIntoView({behavior:'smooth',block:'center'});
+      const exp=document.getElementById('exp-'+id);
+      const head=exp?.previousElementSibling;
+      if(exp&&!exp.classList.contains('open')){
+        exp.classList.add('open');
+        head?.classList.add('open');
+      }
+    }
+  },100);
+}
+
+// ============================================================
+// TABS
+// ============================================================
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.querySelector(`.page[data-page="${t.dataset.page}"]`).classList.add('active');
+    window.scrollTo(0,0);
+    if(t.dataset.page==='mandala')renderMandala();
+  });
+});
+
+// EDIT TOGGLE
+document.getElementById('editToggle').addEventListener('click',()=>{
+  editMode=!editMode;
+  document.body.classList.toggle('edit-mode',editMode);
+  document.getElementById('editToggle').classList.toggle('active',editMode);
+  document.getElementById('editToggle').textContent=editMode?'✓ Listo':'✎ Editar';
+  attachContentEditable();
+  if(sortable)sortable.option('disabled',!editMode);
+});
+
+// ============================================================
+// INIT
+// ============================================================
+(async()=>{
+  await openDB();
+  loadState();
+  renderTracks();
+  renderLaws();
+  renderTeam();
+  renderMandala();
+  attachContentEditable();
+})();
+</script></body></html>
